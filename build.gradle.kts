@@ -10,7 +10,7 @@ val version = "3.93"
 repositories {
     maven("https://maven.aliyun.com/repository/public/")
     mavenCentral()
-
+    maven("https://repo.dmulloy2.net/repository/public/")
     maven("https://repo.crazycrew.us/releases")
     maven("https://repo.codemc.io/repository/nms/")
     maven("https://repo.codemc.io/repository/maven-public/")

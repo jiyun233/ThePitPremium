@@ -2,7 +2,7 @@
 adventure = "4.17.0"
 adventure-platform = "4.3.2"
 server_8 = "1.8.8-R0.1-SNAPSHOT"
-protocolLib = "5.1.0"
+protocolLib = "5.3.0"
 scoreboard-library = "2.1.8"
 kotlin = "2.0.0-RC3"
 mongodb = "3.12.11"
