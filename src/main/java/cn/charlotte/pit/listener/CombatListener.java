@@ -1313,8 +1313,9 @@ public class CombatListener implements Listener {
         killRecap.setLevelDisparityExp(levelAddon);
         killRecap.setLevelDisparityCoin(levelAddon);
 
-        totalCoins = eventBoost * totalCoins;
-        totalXp = eventBoost * totalXp;
+        double rewardBoost = Math.max(1.0, eventBoost);
+        totalCoins = rewardBoost * totalCoins;
+        totalXp = rewardBoost * totalXp;
 
         totalXpAtomic.set(totalXp);
         totalCoinsAtomic.set(totalCoins);

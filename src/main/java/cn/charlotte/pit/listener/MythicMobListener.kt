@@ -22,13 +22,13 @@ object MythicMobListener : Listener {
 
         val killer = event.killer
         if (killer !is Player) return
-/*
-        CombatListener.INSTANCE.handleKill(
-            killer,
-            killer.getPitProfile(),
-            beKilled,
-            PlayerProfile.NONE_PROFILE
-        )*/
+        /*
+                CombatListener.INSTANCE.handleKill(
+                    killer,
+                    killer.getPitProfile(),
+                    beKilled,
+                    PlayerProfile.NONE_PROFILE
+                )*/
         val coinsRange = NewConfiguration.mythicMobs[mob.type.internalName]?.coinsRange ?: IntRange(0, 0)
 
         val coinsToAdd = coinsRange.random().toDouble()
@@ -42,7 +42,12 @@ object MythicMobListener : Listener {
         killer.getPitProfile().coins += coinsToAdd
         killer.getPitProfile().experience += expToAdd
         if (killMessage != null) {
-            killer.sendMessage(CC.translate(killMessage.replace("{mobName}", mob.type.displayName).replace("{exp}",expToAdd.toString()).replace("{coin}",coinsToAdd.toString())))
+            val sentMessage =
+                killMessage.replace("{mobName}", mob.type.displayName)
+                    .replace("{exp}", expToAdd.toString())
+                    .replace("{coin}", coinsToAdd.toString())
+            killer.sendMessage(CC.translate(sentMessage)
+            )
         }
     }
 
