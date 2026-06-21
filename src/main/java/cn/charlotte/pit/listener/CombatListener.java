@@ -81,12 +81,7 @@ public class CombatListener implements Listener {
     String boostString = " &6(限时加成x" + eventBoost + "倍奖励)";
 
     public CombatListener() {
-        this.initMoveHandler();
         INSTANCE = this;
-    }
-
-    private void initMoveHandler() {
-        eventBoost = ThePit.getInstance().getPitConfig().getBooster();
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -1084,20 +1079,22 @@ public class CombatListener implements Listener {
         String genesisStatus = "";
         if (ThePit.getInstance().getPitConfig().isGenesisEnable() && killerProfile.getGenesisData().getTeam() != GenesisTeam.NONE) {
             if (killerProfile.getGenesisData().getTeam() == playerProfile.getGenesisData().getTeam()) {
-                killerProfile.getGenesisData().setPoints(killerProfile.getGenesisData().getPoints() + 1);
+                int points = Math.toIntExact(Math.round(CombatListener.eventBoost));
+                killerProfile.getGenesisData().setPoints(killerProfile.getGenesisData().getPoints() + points);
                 if (killerProfile.getGenesisData().getTeam() == GenesisTeam.ANGEL) {
-                    genesisStatus = " &b+1活动点数";
+                    genesisStatus = " &b+" + points + "活动点数";
                 }
                 if (killerProfile.getGenesisData().getTeam() == GenesisTeam.DEMON) {
-                    genesisStatus = " &c+1活动点数";
+                    genesisStatus = " &b+" + points + "活动点数";
                 }
             } else {
-                killerProfile.getGenesisData().setPoints(killerProfile.getGenesisData().getPoints() + 2);
+                int points = Math.toIntExact(Math.round(CombatListener.eventBoost) * 2);
+                killerProfile.getGenesisData().setPoints(killerProfile.getGenesisData().getPoints() + points);
                 if (killerProfile.getGenesisData().getTeam() == GenesisTeam.ANGEL) {
-                    genesisStatus = " &b+2活动点数";
+                    genesisStatus = " &b+" + points + "活动点数";
                 }
                 if (killerProfile.getGenesisData().getTeam() == GenesisTeam.DEMON) {
-                    genesisStatus = " &c+2活动点数";
+                    genesisStatus = " &b+" + points + "活动点数";
                 }
             }
         }
