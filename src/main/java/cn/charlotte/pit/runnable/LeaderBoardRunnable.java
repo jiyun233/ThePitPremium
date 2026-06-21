@@ -1,9 +1,12 @@
 package cn.charlotte.pit.runnable;
 
 import cn.charlotte.pit.ThePit;
+import cn.charlotte.pit.data.KillBoardEntry;
 import cn.charlotte.pit.data.LeaderBoardEntry;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Sorts;
 import org.bson.Document;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +23,7 @@ import java.util.logging.Logger;
 
 public class LeaderBoardRunnable implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(LeaderBoardRunnable.class.getName());
+    private static final long ACTIVE_PLAYER_WINDOW = 7 * 24 * 60 * 60 * 1000L;
     private final ThePit instance;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -31,20 +35,24 @@ public class LeaderBoardRunnable implements Runnable {
     @Override
     public void run() {
         try {
-            List<Document> documents = loadDocuments();
-            List<LeaderBoardEntry> entries = processDocuments(documents);
+            List<Document> experienceDocuments = loadDocuments("totalExp");
+            List<LeaderBoardEntry> entries = processExperienceDocuments(experienceDocuments);
             updateLeaderBoardEntries(entries);
+
+            List<Document> killDocuments = loadDocuments("kills");
+            List<KillBoardEntry> killEntries = processKillDocuments(killDocuments);
+            updateKillBoardEntries(killEntries);
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "更新排行榜数据时发生错误：", e);
         }
     }
 
-    private List<Document> loadDocuments() {
+    private List<Document> loadDocuments(String sortField) {
         try (var cursor = instance.getMongoDB()
                 .getCollection()
                 .find()
-                .sort(Filters.eq("totalExp", -1))
-                .filter(Filters.gte("lastLogoutTime", System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000))
+                .filter(Filters.gte("lastLogoutTime", System.currentTimeMillis() - ACTIVE_PLAYER_WINDOW))
+                .sort(Sorts.descending(sortField))
                 .cursor()) {
 
             List<Document> documents = new ArrayList<>();
@@ -58,7 +66,7 @@ public class LeaderBoardRunnable implements Runnable {
         }
     }
 
-    private List<LeaderBoardEntry> processDocuments(List<Document> documents) {
+    private List<LeaderBoardEntry> processExperienceDocuments(List<Document> documents) {
         List<LeaderBoardEntry> entries = new ArrayList<>();
         int rank = 1;
         for (Document document : documents) {
@@ -70,7 +78,24 @@ public class LeaderBoardRunnable implements Runnable {
                 entries.add(new LeaderBoardEntry(name, UUID.fromString(uuid), rank, experience, prestige));
                 rank++;
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "处理文档时发生错误：", e);
+                LOGGER.log(Level.WARNING, "处理经验排行榜文档时发生错误：", e);
+            }
+        }
+        return entries;
+    }
+
+    private List<KillBoardEntry> processKillDocuments(List<Document> documents) {
+        List<KillBoardEntry> entries = new ArrayList<>();
+        int rank = 1;
+        for (Document document : documents) {
+            try {
+                String name = document.getString("playerName");
+                String uuid = document.getString("uuid");
+                int kills = getInteger(document, "kills");
+                entries.add(new KillBoardEntry(name, UUID.fromString(uuid), rank, kills));
+                rank++;
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "处理击杀排行榜文档时发生错误：", e);
             }
         }
         return entries;
@@ -90,9 +115,23 @@ public class LeaderBoardRunnable implements Runnable {
         }
     }
 
+    private int getInteger(Document document, String field) {
+        Object value = document.get(field);
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        }
+        return 0;
+    }
+
     private void updateLeaderBoardEntries(List<LeaderBoardEntry> entries) {
         synchronized (LeaderBoardEntry.class) {
             LeaderBoardEntry.setLeaderBoardEntries(entries);
+        }
+    }
+
+    private void updateKillBoardEntries(List<KillBoardEntry> entries) {
+        synchronized (KillBoardEntry.class) {
+            KillBoardEntry.setKillBoardEntries(entries);
         }
     }
 

@@ -149,6 +149,11 @@ public class PitConfig extends Configuration {
     @ConfigSerializer(serializer = LocationSerializer.class)
     private Location leaderBoardHologram;
     @ConfigData(
+            path = "loc.hologram.killingBoard"
+    )
+    @ConfigSerializer(serializer = LocationSerializer.class)
+    private Location killingBoardHologram;
+    @ConfigData(
             path = "loc.hologram.mythic"
     )
 
@@ -370,6 +375,14 @@ public class PitConfig extends Configuration {
 
     public PitConfig(JavaPlugin plugin) {
         super(plugin);
+    }
+
+    public Location getLeaderBoardHologramLocation() {
+        return this.leaderBoardHologram;
+    }
+
+    public Location getKillingBoardHologramLocation() {
+        return this.killingBoardHologram;
     }
 
     public boolean isGenesisEnable() {
