@@ -77,6 +77,10 @@ public class PitConfig extends Configuration {
     )
     private int arenaHighestY;
     @ConfigData(
+            path = "arenaLowestY"
+    )
+    private int arenaLowestY;
+    @ConfigData(
             path = "loc.spawn"
     )
     @ConfigSerializer(serializer = LocationSerializer.class)

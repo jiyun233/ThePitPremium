@@ -63,7 +63,7 @@ public class PlayerListener extends HandleMoveBase implements Listener {
                         return;
                     }
                     if (player.getLocation().equals(respawn)) {
-                        handleMove(player);
+                        handleMove(player, false);
                         this.cancel();
                     }
                 }
@@ -86,6 +86,6 @@ public class PlayerListener extends HandleMoveBase implements Listener {
 
     @EventHandler
     public void onPlayerTeleport(PlayerTeleportEvent event) {
-        handleMove(event.getPlayer());
+        handleMove(event.getPlayer(), false);
     }
 }

@@ -20,6 +20,7 @@ enchants: # 输入附魔名称 关闭不需要的附魔
     - "111"
 #建筑高度限制
 arenaHighestY: 75
+arenaLowestY: 0
 #位置档案
 loc:
   #出生点 随机一个
