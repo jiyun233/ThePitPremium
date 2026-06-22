@@ -15,6 +15,7 @@ import cn.charlotte.pit.event.PitDamageEvent;
 import cn.charlotte.pit.event.PitDamagePlayerEvent;
 import cn.charlotte.pit.events.EventFactory;
 import cn.charlotte.pit.game.Game;
+import cn.charlotte.pit.parm.AutoRegister;
 import cn.charlotte.pit.parm.listener.*;
 import cn.charlotte.pit.parm.type.BowOnly;
 import cn.charlotte.pit.parm.type.ThrowOnly;
@@ -60,6 +61,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @Author: EmptyIrony
  * @Date: 2021/1/2 12:40
  */
+@AutoRegister
 public class GameEffectListener implements Listener {
     private final DecimalFormat numFormatTwo = new DecimalFormat("0.00");
 

@@ -100,8 +100,10 @@ public class VampirePerk extends AbstractPerk implements IAttackEntity, IPlayerS
         if (PlayerUtil.isPlayerChosePerk(attacker, "rambo")) {
             return;
         }
-        new VampireMedal().addProgress(PlayerProfile.getPlayerProfileByUuid(attacker.getUniqueId()), (int) Math.max(0, attacker.getMaxHealth() - Math.min(attacker.getHealth() + 1, attacker.getMaxHealth())));
-        attacker.setHealth(Math.min(attacker.getHealth() + 1, attacker.getMaxHealth()));
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
+            new VampireMedal().addProgress(PlayerProfile.getPlayerProfileByUuid(attacker.getUniqueId()), (int) Math.max(0, attacker.getMaxHealth() - Math.min(attacker.getHealth() + 1, attacker.getMaxHealth())));
+            PlayerUtil.heal(attacker, 1);
+        }, 1L);
     }
 
     @Override
@@ -118,8 +120,10 @@ public class VampirePerk extends AbstractPerk implements IAttackEntity, IPlayerS
         if (Utils.getEnchantLevel(targetPlayer.getItemInHand(), "BulletTime") > 0 && targetPlayer.isBlocking()) {
             return;
         }
-        new VampireMedal().addProgress(PlayerProfile.getPlayerProfileByUuid(attacker.getUniqueId()), (int) Math.max(0, attacker.getMaxHealth() - Math.min(attacker.getHealth() + 3, attacker.getMaxHealth())));
-        attacker.setHealth(Math.min(attacker.getHealth() + 3, attacker.getMaxHealth()));
+        Bukkit.getScheduler().runTaskLater(ThePit.getInstance(), () -> {
+            new VampireMedal().addProgress(PlayerProfile.getPlayerProfileByUuid(attacker.getUniqueId()), (int) Math.max(0, attacker.getMaxHealth() - Math.min(attacker.getHealth() + 3, attacker.getMaxHealth())));
+            PlayerUtil.heal(attacker, 3);
+        }, 1L);
     }
 
     @Override
