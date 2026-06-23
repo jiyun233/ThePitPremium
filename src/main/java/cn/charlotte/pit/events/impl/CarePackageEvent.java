@@ -204,7 +204,7 @@ public class CarePackageEvent implements INormalEvent, IEvent, Listener, IScoreB
     @Override
     public List<String> insert(Player player) {
         if (chest == null) return null;
-
+        if (player.getWorld() != chest.getWorld()) return null;
         List<String> lines = new ArrayList<>();
         String targetDirection = DirectionUtil.getTargetDirection(player, chest);
         int distance = (int) player.getLocation().distance(chest);

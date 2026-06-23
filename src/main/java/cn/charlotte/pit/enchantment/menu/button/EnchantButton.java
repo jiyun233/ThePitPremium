@@ -43,6 +43,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -565,8 +566,18 @@ public class EnchantButton extends Button {
                         for (AbstractEnchantment abstractEnchantment : mythicItem.getEnchantments().keySet()) {
                             totalLevel += mythicItem.getEnchantments().get(abstractEnchantment);
                         }
-                        if ((totalLevel == 8 && RandomUtil.hasSuccessfullyByChance(0.9)) || totalLevel == 9) {
-                            mythicItem.getEnchantments().put((AbstractEnchantment) RandomUtil.helpMeToChooseOne(mythicItem.getEnchantments().keySet().toArray()), 1);
+                        if (totalLevel >= 9) {
+                            AbstractEnchantment maxLevelEnchant = null;
+                            int maxLevel = 0;
+                            for (Map.Entry<AbstractEnchantment, Integer> entry : mythicItem.getEnchantments().entrySet()) {
+                                if (entry.getValue() > maxLevel) {
+                                    maxLevel = entry.getValue();
+                                    maxLevelEnchant = entry.getKey();
+                                }
+                            }
+                            if (maxLevelEnchant != null && maxLevel > 1) {
+                                mythicItem.getEnchantments().put(maxLevelEnchant, maxLevel - 1);
+                            }
                         }
                     }
                     boolean badLuck = true;

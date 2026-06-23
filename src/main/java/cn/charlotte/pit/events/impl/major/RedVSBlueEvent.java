@@ -311,6 +311,9 @@ public class RedVSBlueEvent implements IEvent, IEpicEvent, Listener, IScoreBoard
 
     @EventHandler
     public void onTeleport(PlayerTeleportEvent event) {
+        if (event.getTo() == null) {
+            return;
+        }
         this.sendPacket(event.getPlayer());
     }
 

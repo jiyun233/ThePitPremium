@@ -26,6 +26,7 @@ import cn.charlotte.pit.parm.listener.IPlayerBeKilledByEntity;
 import cn.charlotte.pit.parm.listener.IPlayerKilledEntity;
 import cn.charlotte.pit.parm.listener.IPlayerRespawn;
 import cn.charlotte.pit.perk.AbstractPerk;
+import cn.charlotte.pit.perk.PerkFactory;
 import cn.charlotte.pit.perk.type.prestige.RawNumbersPerk;
 import cn.charlotte.pit.runnable.ProfileLoadRunnable;
 import cn.charlotte.pit.util.MythicUtil;
@@ -214,6 +215,7 @@ public class CombatListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onKilled(PlayerDeathEvent event) {
         event.setDeathMessage(null);
+        event.getEntity().spigot().respawn();
         handlePlayerDeath(event.getEntity(), event.getEntity().getKiller(), true);
     }
 
@@ -1180,6 +1182,7 @@ public class CombatListener implements Listener {
     }
 
     private void handleGameEffect(PlayerProfile killerProfile, Player killer, LivingEntity player, AtomicDouble coinsAtomic, AtomicDouble expAtomic) {
+        PerkFactory perkFactory = ThePit.getInstance().getPerkFactory();
         for (IPlayerKilledEntity ins : ThePit.getInstance().getPerkFactory()
                 .getPlayerKilledEntities()) {
             AbstractPerk perk = (AbstractPerk) ins;
