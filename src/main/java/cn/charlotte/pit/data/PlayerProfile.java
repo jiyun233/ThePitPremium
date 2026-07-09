@@ -453,6 +453,10 @@ public class PlayerProfile {
         cacheProfile.put(this.getPlayerUuid(), this);
     }
 
+    public void save() {
+        save(null);
+    }
+
     public PlayerProfile save(Player player) {
         this.totalExp = experience;
         for (int i = 0; i < prestige; i++) {

@@ -324,10 +324,6 @@ public class PitConfig extends Configuration {
             path = "debug.ienchantNpcLoc"
     )
     private Location enchantNpcLocation;
-    @ConfigData(
-            path = "booster"
-    )
-    private double booster = 1.0;
 
     @ConfigData(path = "beta-version")
     public boolean betaVersion = false;
@@ -340,19 +336,6 @@ public class PitConfig extends Configuration {
             path = "firewell-code"
     )
     private String firewellcode = "null";
-
-    @ConfigData(
-            path = "curfew.enable"
-    )
-    private boolean curfewEnable;
-    @ConfigData(
-            path = "curfew.start"
-    )
-    private int curfewStart;
-    @ConfigData(
-            path = "curfew.end"
-    )
-    private int curfewEnd;
 
     @ConfigData(
             path = "loc.Sewers.chests"

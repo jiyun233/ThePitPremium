@@ -1,9 +1,6 @@
 package cn.charlotte.pit.menu.shop;
 
-import cn.charlotte.pit.ThePit;
 import cn.charlotte.pit.menu.shop.button.type.*;
-import cn.charlotte.pit.menu.supporter.button.SupporterEntranceButton;
-import cn.charlotte.pit.util.PlayerUtil;
 import cn.charlotte.pit.util.menu.Button;
 import cn.charlotte.pit.util.menu.Menu;
 import org.bukkit.entity.Player;
@@ -42,9 +39,6 @@ public class ShopMenu extends Menu {
         button.put(28, new SwordBundleShopButton());
         button.put(29, new BowBundleShopButton());
         button.put(30, new PantsBundleShopButton());
-        if (!ThePit.isDEBUG_SERVER() || PlayerUtil.isStaff(player)) {
-            button.put(35, new SupporterEntranceButton());
-        }
         return button;
     }
 

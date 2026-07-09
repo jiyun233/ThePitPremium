@@ -78,11 +78,18 @@ public class CombatListener implements Listener {
     private final Random random = new Random();
     private final DecimalFormat numFormat = new DecimalFormat("0.00");
     private final DecimalFormat intFormat = new DecimalFormat("0");
-    public static double eventBoost = 2.0; //1.0 to close
-    String boostString = " &6(限时加成x" + eventBoost + "倍奖励)";
+    private final Map<UUID, Integer> mythicKillCounters = new HashMap<>();
 
     public CombatListener() {
         INSTANCE = this;
+    }
+
+    private static double getEventBoost() {
+        return Math.max(0.0, NewConfiguration.INSTANCE.getEventBoost());
+    }
+
+    private String getBoostString(double boost) {
+        return " &6(加成x" + numFormat.format(boost) + "倍奖励)";
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -367,7 +374,6 @@ public class CombatListener implements Listener {
 
     public void handleKill(Player killer, PlayerProfile killerProfile, LivingEntity player, PlayerProfile playerProfile) {
         try {
-            boolean isNight = isNight();
 
             final String coloredName = RankUtil.getPlayerColoredName(player.getUniqueId());
 
@@ -382,10 +388,7 @@ public class CombatListener implements Listener {
                 this.handleItemDrop(killerProfile, killer, (Player) player);
             }
             //process drop armor - end
-
-            if (!isNight) {
-                killerProfile.setStreakKills(killerProfile.getStreakKills() + 1);
-            }
+            killerProfile.setStreakKills(killerProfile.getStreakKills() + 1);
             killerProfile.setKills(killerProfile.getKills() + 1);
 
             killerProfile.kingsQuestsData.checkUpdate();
@@ -404,11 +407,9 @@ public class CombatListener implements Listener {
 
             this.handleGameEffect(killerProfile, killer, player, coinsAtomic, expAtomic);
 
-            if (!isNight) {
-                //process giving bounty - start
-                this.handleAddBounty(killerProfile, killer);
-                //process giving bounty - end
-            }
+            //process giving bounty - start
+            this.handleAddBounty(killerProfile, killer);
+            //process giving bounty - end
 
             totalCoins = coinsAtomic.get();
             totalXp = expAtomic.get();
@@ -425,11 +426,6 @@ public class CombatListener implements Listener {
 
             totalCoins = tempCoins.get();
             totalXp = tempExp.get();
-
-            if (isNight) {
-                totalCoins = totalCoins * 0.01;
-                totalXp = totalXp * 0.01;
-            }
 
             if (killerProfile.getLevel() < 120) {
                 killerProfile.setExperience(killerProfile.getExperience() + totalXp);
@@ -450,13 +446,11 @@ public class CombatListener implements Listener {
             this.handleGivePlayerKillReward(killer);
             //golden head and vampire - end
 
-            if (!isNight) {
-                //enchant - start
-                this.handleMythicItemDrop(killerProfile, killer, player);
-                //enchant - end
+            //enchant - start
+            this.handleMythicItemDrop(killerProfile, killer, player);
+            //enchant - end
 
-                this.handleCherryDrop(killer);
-            }
+            this.handleCherryDrop(killer);
 
             //refresh killer highest streak kills
             if (killerProfile.getHighestStreaks() < killerProfile.getStreakKills()) {
@@ -749,8 +743,6 @@ public class CombatListener implements Listener {
     private void handleAssist(Player player, Player killer, List<DamageData> damageData, long totalDamage) {
         PlayerProfile playerProfile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
 
-        boolean night = isNight();
-
         for (DamageData data : damageData) {
             if (killer != null && killer.getUniqueId().equals(data.getUuid())) {
                 continue;
@@ -846,17 +838,18 @@ public class CombatListener implements Listener {
                 killRecap.getAssistData().add(assistData);
                 totalCoins = coinsAtomic.get() * (percentage);
                 totalXp = expAtomic.get() * (percentage);
-                //process perk - end
-
-                if (night) {
-                    totalXp *= 0.01;
-                    totalCoins *= 0.01;
-                }
 
                 //Assistant to the streaker effect
-                if (PlayerUtil.isPlayerBoughtPerk(assistPlayer, "assistant_to_the_streaker") && !isNight()) {
+                if (PlayerUtil.isPlayerBoughtPerk(assistPlayer, "assistant_to_the_streaker")) {
                     assistProfile.setStreakKills(assistProfile.getStreakKills() + Math.floor(100 * percentage) * 0.01);
                 }
+
+                // 权限组倍率
+                double rankCoinBoost = NewConfiguration.INSTANCE.getCoinBoost(assistPlayer);
+                double rankExpBoost = NewConfiguration.INSTANCE.getExpBoost(assistPlayer);
+                totalCoins = totalCoins * rankCoinBoost;
+                totalXp = totalXp * rankExpBoost;
+
                 assistProfile.setAssists(assistProfile.getAssists() + 1);
                 assistProfile.setExperience(assistProfile.getExperience() + totalXp);
                 assistProfile.setCoins(assistProfile.getCoins() + totalCoins);
@@ -864,10 +857,11 @@ public class CombatListener implements Listener {
                 assistProfile.applyExperienceToPlayer(assistPlayer);
 
 
-                totalCoins = eventBoost * totalCoins;
-                totalXp = eventBoost * totalXp;
+                double boost = getEventBoost();
+                totalCoins = boost * totalCoins;
+                totalXp = boost * totalXp;
                 assistPlayer.playSound(assistPlayer.getLocation(), Sound.ORB_PICKUP, 1, 1.7F);
-                CC.send(MessageType.COMBAT, assistPlayer, CC.translate("&a&l助攻! &7" + numFormat.format(percentage * 100) + "% 的伤害在 " + playerProfile.getFormattedName() + " &6+" + numFormat.format(totalCoins) + "硬币 " + (assistProfile.getLevel() < 120 ? "&b+" + numFormat.format(totalXp) + "经验值" : "") + (eventBoost > 1 ? boostString : "")));
+                CC.send(MessageType.COMBAT, assistPlayer, CC.translate("&a&l助攻! &7" + numFormat.format(percentage * 100) + "% 的伤害在 " + playerProfile.getFormattedName() + " &6+" + numFormat.format(totalCoins) + "硬币 " + (assistProfile.getLevel() < 120 ? "&b+" + numFormat.format(totalXp) + "经验值" : "") + (boost > 2 ? getBoostString(boost) : "")));
             }
         }
     }
@@ -935,55 +929,87 @@ public class CombatListener implements Listener {
     }
 
     private void handleMythicItemDrop(PlayerProfile killerProfile, Player killer, LivingEntity beKilledPlayer) {
-        int enchantPerkLevel = -1;
+        UUID uuid = killer.getUniqueId();
+
+        // 累计击杀计数
+        int killsSinceLastDrop = mythicKillCounters.getOrDefault(uuid, 0) + 1;
+        mythicKillCounters.put(uuid, killsSinceLastDrop);
+
+        int pityThreshold = NewConfiguration.INSTANCE.getMythicPityThreshold();
+        double baseChance = NewConfiguration.INSTANCE.getMythicDropChance(killer);
+        double softPityRatio = NewConfiguration.INSTANCE.getMythicSoftPityRatio();
+
+        // 原神式概率: 软保底前恒定低概率, 软保底后陡升到100%
+        int softPityStart = (int) (pityThreshold * softPityRatio);
+        double chance;
+        if (killsSinceLastDrop < softPityStart) {
+            chance = baseChance; // 前期保持低概率
+        } else {
+            // 软保底区间: 线性陡升到100%
+            double progress = (double) (killsSinceLastDrop - softPityStart) / (pityThreshold - softPityStart);
+            chance = baseChance + (1.0 - baseChance) * progress;
+        }
+
+        // Mythicism 天赋加成
         PerkData data = killerProfile.getUnlockedPerkMap().get("Mythicism");
+        int enchantPerkLevel = -1;
         if (data != null && !UtilKt.hasRealMan(killer)) {
             enchantPerkLevel = data.getLevel();
+            chance = chance * (1 + (enchantPerkLevel - 1) * 0.02);
         }
-        if (enchantPerkLevel > -1) {
-            double chance = NewConfiguration.INSTANCE.getMythicDropChance(killer) * (1 + (enchantPerkLevel - 1) * 0.02);
-            int level = Utils.getEnchantLevel(killer.getInventory().getLeggings(), "pants_radar");
-            if (level > 0) {
-                chance = (1 + level * 0.3) * chance;
+
+        // Pants Radar 附魔加成 (裤腿)
+        int level = Utils.getEnchantLevel(killer.getInventory().getLeggings(), "pants_radar");
+        if (level > 0) {
+            chance = (1 + level * 0.3) * chance;
+        }
+        // Pants Radar 附魔加成 (手持武器)
+        level = Utils.getEnchantLevel(killer.getItemInHand(), "pants_radar");
+        if (level > 0) {
+            chance = (1 + level * 0.3) * chance;
+        }
+
+        // 保底强制掉落
+        boolean guaranteed = killsSinceLastDrop >= pityThreshold;
+
+        if (guaranteed || RandomUtil.hasSuccessfullyByChance(Math.min(1.0, chance))) {
+            // 重置计数器
+            mythicKillCounters.put(uuid, 0);
+
+            AbstractPitItem item;
+            if (enchantPerkLevel >= 4) {
+                item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(new MythicBowItem(), new MythicSwordItem(), new MythicLeggingsItem());
+            } else {
+                item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(new MythicBowItem(), new MythicSwordItem());
             }
-            level = Utils.getEnchantLevel(killer.getItemInHand(), "pants_radar");
-            if (level > 0) {
-                chance = (1 + level * 0.3) * chance;
+
+            ItemStack itemStack = item.toItemStack();
+
+            if (InventoryUtil.isInvFull(killer.getInventory())) {
+                beKilledPlayer.getWorld().dropItemNaturally(beKilledPlayer.getLocation(), itemStack);
+            } else {
+                InventoryUtil.addInvReverse(killer.getInventory(), itemStack);
             }
-            boolean b = RandomUtil.hasSuccessfullyByChance(chance);
-            if (b) {
-                AbstractPitItem item;
-                if (enchantPerkLevel >= 4) {
-                    item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(new MythicBowItem(), new MythicSwordItem(), new MythicLeggingsItem());
-                } else {
-                    item = (AbstractPitItem) RandomUtil.helpMeToChooseOne(new MythicBowItem(), new MythicSwordItem());
-                }
 
-                ItemStack itemStack = item.toItemStack();
+            String msg = guaranteed
+                    ? "&d&l神话武器! &7你在战斗中拾取了掉落的神话物品! &e(保底)"
+                    : "&d&l神话武器! &7你在战斗中拾取了掉落的神话物品!";
+            CC.send(MessageType.MISC, killer, msg);
 
-                if (InventoryUtil.isInvFull(killer.getInventory())) {
-                    beKilledPlayer.getWorld().dropItemNaturally(beKilledPlayer.getLocation(), itemStack);
-                } else {
-                    InventoryUtil.addInvReverse(killer.getInventory(), itemStack);
-                }
+            //fixme: change to sound system
+            new BukkitRunnable() {
+                int task = 0;
 
-                CC.send(MessageType.MISC, killer, "&d&l神话武器! &7你在战斗中拾取了掉落的神话物品!");
+                @Override
+                public void run() {
+                    killer.playSound(beKilledPlayer.getLocation(), Sound.NOTE_PLING, 1, 0.1F + (0.5F * task));
+                    task++;
 
-                //fixme: change to sound system
-                new BukkitRunnable() {
-                    int task = 0;
-
-                    @Override
-                    public void run() {
-                        killer.playSound(beKilledPlayer.getLocation(), Sound.NOTE_PLING, 1, 0.1F + (0.5F * task));
-                        task++;
-
-                        if (task >= 6) {
-                            cancel();
-                        }
+                    if (task >= 6) {
+                        cancel();
                     }
-                }.runTaskTimer(ThePit.getInstance(), 10, 5);
-            }
+                }
+            }.runTaskTimer(ThePit.getInstance(), 10, 5);
         }
     }
 
@@ -1080,24 +1106,18 @@ public class CombatListener implements Listener {
 
         String genesisStatus = "";
         if (ThePit.getInstance().getPitConfig().isGenesisEnable() && killerProfile.getGenesisData().getTeam() != GenesisTeam.NONE) {
+            int points;
             if (killerProfile.getGenesisData().getTeam() == playerProfile.getGenesisData().getTeam()) {
-                int points = Math.toIntExact(Math.round(CombatListener.eventBoost));
-                killerProfile.getGenesisData().setPoints(killerProfile.getGenesisData().getPoints() + points);
-                if (killerProfile.getGenesisData().getTeam() == GenesisTeam.ANGEL) {
-                    genesisStatus = " &b+" + points + "活动点数";
-                }
-                if (killerProfile.getGenesisData().getTeam() == GenesisTeam.DEMON) {
-                    genesisStatus = " &b+" + points + "活动点数";
-                }
+                points = 1;
             } else {
-                int points = Math.toIntExact(Math.round(CombatListener.eventBoost) * 2);
-                killerProfile.getGenesisData().setPoints(killerProfile.getGenesisData().getPoints() + points);
-                if (killerProfile.getGenesisData().getTeam() == GenesisTeam.ANGEL) {
-                    genesisStatus = " &b+" + points + "活动点数";
-                }
-                if (killerProfile.getGenesisData().getTeam() == GenesisTeam.DEMON) {
-                    genesisStatus = " &b+" + points + "活动点数";
-                }
+                points = 2;
+            }
+            killerProfile.getGenesisData().setPoints(killerProfile.getGenesisData().getPoints() + points);
+            if (killerProfile.getGenesisData().getTeam() == GenesisTeam.ANGEL) {
+                genesisStatus = " &b+" + points + "活动点数";
+            }
+            if (killerProfile.getGenesisData().getTeam() == GenesisTeam.DEMON) {
+                genesisStatus = " &b+" + points + "活动点数";
             }
         }
 
@@ -1135,10 +1155,14 @@ public class CombatListener implements Listener {
             }
         }
 
+        double rewardBoost = Math.max(1.0, getEventBoost());
+        totalCoins = rewardBoost * totalCoins;
+        totalXp = rewardBoost * totalXp;
+
         if (totalXp > 0) {
-            CC.send(MessageType.COMBAT, killer, CC.translate("&a&l" + prefix + "! " + RankUtil.getPlayerColoredName(beKilledPlayer.getUniqueId()) + " &6+" + numFormat.format(totalCoins) + "硬币 &b+" + numFormat.format(totalXp) + "经验值" + genesisStatus + (eventBoost > 1 ? boostString : "")));
+            CC.send(MessageType.COMBAT, killer, CC.translate("&a&l" + prefix + "! " + RankUtil.getPlayerColoredName(beKilledPlayer.getUniqueId()) + " &6+" + numFormat.format(totalCoins) + "硬币 &b+" + numFormat.format(totalXp) + "经验值" + genesisStatus + (rewardBoost > 2 ? getBoostString(rewardBoost) : "")));
         } else {
-            CC.send(MessageType.COMBAT, killer, CC.translate("&a&l" + prefix + "! " + RankUtil.getPlayerColoredName(beKilledPlayer.getUniqueId()) + " &6+" + numFormat.format(totalCoins) + "硬币" + genesisStatus + (eventBoost > 1 ? boostString : "")));
+            CC.send(MessageType.COMBAT, killer, CC.translate("&a&l" + prefix + "! " + RankUtil.getPlayerColoredName(beKilledPlayer.getUniqueId()) + " &6+" + numFormat.format(totalCoins) + "硬币" + genesisStatus + (rewardBoost > 2 ? getBoostString(rewardBoost) : "")));
         }
 
         String deathString = CC.translate("&c&l死亡! &7被 " + killerProfile.getFormattedName() + " &7击杀.");
@@ -1313,9 +1337,15 @@ public class CombatListener implements Listener {
         killRecap.setLevelDisparityExp(levelAddon);
         killRecap.setLevelDisparityCoin(levelAddon);
 
-        double rewardBoost = Math.max(1.0, eventBoost);
+        double rewardBoost = Math.max(1.0, getEventBoost());
         totalCoins = rewardBoost * totalCoins;
         totalXp = rewardBoost * totalXp;
+
+        // 权限组倍率
+        double rankCoinBoost = NewConfiguration.INSTANCE.getCoinBoost(killer);
+        double rankExpBoost = NewConfiguration.INSTANCE.getExpBoost(killer);
+        totalCoins = totalCoins * rankCoinBoost;
+        totalXp = totalXp * rankExpBoost;
 
         totalXpAtomic.set(totalXp);
         totalCoinsAtomic.set(totalCoins);
@@ -1349,17 +1379,5 @@ public class CombatListener implements Listener {
         if (factory.getActiveEpicEvent() != null) {
             event.setCancelled(true);
         }
-    }
-
-    public static boolean isNight() {
-        if (!ThePit.getInstance().getPitConfig().isCurfewEnable()) {
-            return false;
-        }
-
-        final Calendar instance = Calendar.getInstance();
-        instance.setTimeInMillis(System.currentTimeMillis());
-        final int hour = instance.get(Calendar.HOUR_OF_DAY);
-
-        return hour >= ThePit.getInstance().getPitConfig().getCurfewStart() && hour <= ThePit.getInstance().getPitConfig().getCurfewEnd();
     }
 }

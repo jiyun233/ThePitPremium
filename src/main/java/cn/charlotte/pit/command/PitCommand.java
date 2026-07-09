@@ -1,6 +1,7 @@
 package cn.charlotte.pit.command;
 
 import cn.charlotte.pit.ThePit;
+import cn.charlotte.pit.config.NewConfiguration;
 import cn.charlotte.pit.data.CDKData;
 import cn.charlotte.pit.data.PlayerProfile;
 import cn.charlotte.pit.data.mail.Mail;
@@ -121,9 +122,8 @@ public class PitCommand {
             names = "events"
     )
     public void previewEvents(Player player) {
-        PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-        if (!profile.isSupporter() && !PlayerUtil.isStaff(player)) {
-            player.sendMessage(CC.translate("&c你需要购买 &e天坑乱斗会员 &c才可以使用此指令!"));
+        if (!NewConfiguration.INSTANCE.hasAnyRank(player) && !PlayerUtil.isStaff(player)) {
+            player.sendMessage(CC.translate("&c你需要拥有 &e天坑乱斗会员权限 &c才可以使用此指令!"));
             return;
         }
         new EventPreviewerMenu().openMenu(player);
@@ -133,11 +133,11 @@ public class PitCommand {
             names = "show"
     )
     public void show(Player player) {
-        PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
-        if (!profile.isSupporter() && !PlayerUtil.isStaff(player)) {
-            player.sendMessage(CC.translate("&c你需要购买 &e天坑乱斗会员 &c才可以使用此指令!"));
+        if (!NewConfiguration.INSTANCE.hasAnyRank(player) && !PlayerUtil.isStaff(player)) {
+            player.sendMessage(CC.translate("&c你需要拥有 &e天坑乱斗会员权限 &c才可以使用此指令!"));
             return;
         }
+        PlayerProfile profile = PlayerProfile.getPlayerProfileByUuid(player.getUniqueId());
         COOLDOWN_SHOW.putIfAbsent(player.getUniqueId(), new Cooldown(0));
         if (!COOLDOWN_SHOW.get(player.getUniqueId()).hasExpired() && !player.hasPermission("thepit.admin")) {
             player.sendMessage(CC.translate("此指令仍在冷却中: " + TimeUtil.millisToTimer(COOLDOWN_SHOW.get(player.getUniqueId()).getRemaining())));

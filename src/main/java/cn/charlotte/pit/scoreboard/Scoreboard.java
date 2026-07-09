@@ -9,6 +9,7 @@ import cn.charlotte.pit.events.INormalEvent;
 import cn.charlotte.pit.events.IScoreBoardInsert;
 import cn.charlotte.pit.events.genesis.team.GenesisTeam;
 import cn.charlotte.pit.events.impl.major.RagePitEvent;
+import cn.charlotte.pit.menu.prestige.button.PrestigeStatusButton;
 import cn.charlotte.pit.perk.type.streak.tothemoon.ToTheMoonMegaStreak;
 import cn.charlotte.pit.util.PlayerUtil;
 import cn.charlotte.pit.util.Utils;
@@ -136,6 +137,22 @@ public class Scoreboard implements AssembleAdapter {
             lines.add("&f经验值: &cMax");
         } else {
             lines.add("&f下一等级: &b" + numFormatTwo.format((LevelUtil.getLevelTotalExperience(prestige, level + 1) - profile.getExperience())));
+        }
+
+        // 精通进度条
+        if (prestige < PrestigeStatusButton.limit) {
+            double required = 16000.0 * (prestige + 1);
+            double current = profile.getGrindedCoins();
+            double progress = Math.min(1.0, current / required);
+            int barLength = 20;
+            int filled = (int) (progress * barLength);
+            StringBuilder bar = new StringBuilder("&a");
+            for (int i = 0; i < barLength; i++) {
+                if (i == filled) bar.append("&7");
+                bar.append("█");
+            }
+            lines.add("&f精通: &6" + df.format(current) + "&7/&6" + df.format(required));
+            lines.add(bar.toString());
         }
 
         if (profile.getCurrentQuest() != null) {

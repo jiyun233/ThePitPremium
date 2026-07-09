@@ -3,7 +3,6 @@ package cn.charlotte.pit.config
 import cn.charlotte.pit.ThePit
 import cn.charlotte.pit.enchantment.type.rare.ThePunchEnchant
 import cn.charlotte.pit.item.MythicColor
-import cn.charlotte.pit.listener.CombatListener
 import cn.charlotte.pit.menu.prestige.button.PrestigeStatusButton
 import org.bukkit.configuration.file.YamlConfiguration
 import org.bukkit.entity.Player
@@ -49,6 +48,14 @@ object NewConfiguration {
 
     private val mythicChance = ArrayList<Pair<String, Double>>()
 
+    var eventBoost = 2.0
+    var mythicPityThreshold = 200
+    var mythicSoftPityRatio = 0.85
+    var defaultEnchantRateMult = 1.5
+
+    val rankBoosts = mutableListOf<RankBoostData>()
+    val boostGroups = mutableListOf<BoostGroupData>()
+
     fun save() {
         config.save(File(ThePit.getInstance().dataFolder, "custom.yml"))
     }
@@ -72,8 +79,6 @@ object NewConfiguration {
         noobDamageBoost = config.getDouble("noob-protect.damage_boost")
         noobDamageReduce = config.getDouble("noob-protect.damage_reduce")
 
-        CombatListener.eventBoost = config.getDouble("booster")
-
         luckGem = config.getDouble("luck-gem", 0.30)
         waterMark = config.getString("water-mark")
         botName = config.getString("bot-name")
@@ -90,10 +95,38 @@ object NewConfiguration {
 
         ThePunchEnchant.PUNCH_Y = config.getDouble("punch_y", 4.0)
 
+        eventBoost = config.getDouble("event-boost", 2.0)
+        mythicPityThreshold = config.getInt("mythic-pity-threshold", 200)
+        mythicSoftPityRatio = config.getDouble("mythic-soft-pity-ratio", 0.85)
+        defaultEnchantRateMult = config.getDouble("default-enchant-rate-mult", 1.5)
+
         pitSupportPermission = config.getString("pitSupportPermission", pitSupportPermission)
         removeSupportWhenNoPermission = config.getBoolean("removeSupportWhenNoPermission", false)
 
         scoreboardShowtime = config.getBoolean("scoreboard-showtime")
+
+        rankBoosts.clear()
+        config.getConfigurationSection("rank-boosts")?.let { section ->
+            for (key in section.getKeys(false)) {
+                val permission = section.getString("$key.permission") ?: continue
+                val coinBoost = section.getDouble("$key.coin-boost", 1.0)
+                val expBoost = section.getDouble("$key.exp-boost", 1.0)
+                val enchantRateMult = section.getDouble("$key.enchant-rate-mult", 1.0)
+                rankBoosts += RankBoostData(permission, coinBoost, expBoost, enchantRateMult)
+            }
+        }
+        rankBoosts.sortByDescending { it.enchantRateMult }
+
+        boostGroups.clear()
+        config.getConfigurationSection("boost-groups")?.let { section ->
+            for (key in section.getKeys(false)) {
+                val permission = section.getString("$key.permission") ?: continue
+                val coinBoost = section.getDouble("$key.coin-boost", 1.0)
+                val expBoost = section.getDouble("$key.exp-boost", 1.0)
+                boostGroups += BoostGroupData(permission, coinBoost, expBoost)
+            }
+        }
+        boostGroups.sortByDescending { it.coinBoost }
 
         mythicChance.clear()
         config.getConfigurationSection("mythicDropChance")!!.let {
@@ -200,11 +233,43 @@ object NewConfiguration {
             return 0.02
         }
 
-        return list.filter {
+        val rate = list.filter {
             player.hasPermission(it.permission)
         }.maxByOrNull {
             it.value
         }?.value ?: 0.005
+
+        val enchantMult = getEnchantRateMult(player)
+        return rate * enchantMult
+    }
+
+    private fun getBestRank(player: Player): RankBoostData? {
+        return rankBoosts
+            .filter { player.hasPermission(it.permission) }
+            .maxByOrNull { it.enchantRateMult }
+    }
+
+    private fun getBestBoost(player: Player): BoostGroupData? {
+        return boostGroups
+            .filter { player.hasPermission(it.permission) }
+            .maxByOrNull { it.coinBoost }
+    }
+
+    fun getCoinBoost(player: Player): Double {
+        return getBestBoost(player)?.coinBoost ?: 1.0
+    }
+
+    fun getExpBoost(player: Player): Double {
+        return getBestBoost(player)?.expBoost ?: 1.0
+    }
+
+    fun getEnchantRateMult(player: Player): Double {
+        val rankMult = getBestRank(player)?.enchantRateMult ?: 1.0
+        return defaultEnchantRateMult * rankMult
+    }
+
+    fun hasAnyRank(player: Player): Boolean {
+        return getBestRank(player) != null
     }
 
     private fun refreshAndSave() {
@@ -222,6 +287,19 @@ object NewConfiguration {
         val value: Double
     )
 
+    data class RankBoostData(
+        val permission: String,
+        val coinBoost: Double,
+        val expBoost: Double,
+        val enchantRateMult: Double
+    )
+
+    data class BoostGroupData(
+        val permission: String,
+        val coinBoost: Double,
+        val expBoost: Double
+    )
+
     class MythicMobsConf(
         val expRange: IntRange,
         val coinsRange: IntRange,
@@ -237,6 +315,41 @@ object NewConfiguration {
         "price-name" to "点券",
         "lobby-command" to "hub",
 
+        "event-boost" to 2.0,
+        "mythic-pity-threshold" to 200,
+        "mythic-soft-pity-ratio" to 0.85,
+        "default-enchant-rate-mult" to 1.5,
+
+        "rank-boosts.vip.permission" to "pit.vip",
+        "rank-boosts.vip.coin-boost" to 1.35,
+        "rank-boosts.vip.exp-boost" to 1.35,
+        "rank-boosts.vip.enchant-rate-mult" to 2.0,
+
+        "rank-boosts.svip.permission" to "pit.svip",
+        "rank-boosts.svip.coin-boost" to 1.5,
+        "rank-boosts.svip.exp-boost" to 1.5,
+        "rank-boosts.svip.enchant-rate-mult" to 4.0,
+
+        "rank-boosts.mvp.permission" to "pit.mvp",
+        "rank-boosts.mvp.coin-boost" to 2.0,
+        "rank-boosts.mvp.exp-boost" to 2.0,
+        "rank-boosts.mvp.enchant-rate-mult" to 6.0,
+
+        "boost-groups.boost_exp.permission" to "pit.boost.exp",
+        "boost-groups.boost_exp.coin-boost" to 1.0,
+        "boost-groups.boost_exp.exp-boost" to 1.35,
+
+        "boost-groups.boost_a.permission" to "pit.boost.a",
+        "boost-groups.boost_a.coin-boost" to 1.35,
+        "boost-groups.boost_a.exp-boost" to 1.35,
+
+        "boost-groups.boost_b.permission" to "pit.boost.b",
+        "boost-groups.boost_b.coin-boost" to 1.5,
+        "boost-groups.boost_b.exp-boost" to 1.5,
+
+        "boost-groups.boost_c.permission" to "pit.boost.c",
+        "boost-groups.boost_c.coin-boost" to 2.0,
+        "boost-groups.boost_c.exp-boost" to 2.0,
 
         "coins-boost" to 2.0,
         "luck-gem" to 0.30,
@@ -318,5 +431,4 @@ object NewConfiguration {
         "mythicDropChance.vip2.test" to "permission.vip2",
         "mythicDropChance.vip2.value" to 0.02,
     )
-
 }

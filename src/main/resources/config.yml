@@ -202,16 +202,6 @@ debug:
     z: -6.306275814520202
     pitch: 38.875862
     yaw: -273.7115
-#金币倍数
-booster: 3.0
-#宵禁设置
-curfew:
-  #启用
-  enable: false
-  #几点开始
-  start: 0
-  #几点结束
-  end: 7
 server-name: "&e天坑乱斗"
 #阵营活动开始时间戳
 #https://tool.lu/timestamp/
